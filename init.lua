@@ -1,7 +1,7 @@
 local q = xplr.util.shell_quote
 
 local function fzf(args, paths)
-  local cmd = q(args.bin) .. " -m " .. args.args
+  local cmd = q(args.bin) .. " " .. args.args
   if paths ~= nil then
     cmd = cmd .. " <<< " .. q(paths)
   end
@@ -21,19 +21,46 @@ local function fzf(args, paths)
     return
   elseif count == 1 then
     local path = lines[1]
-    local msgs = {
-      { FocusPath = path },
-    }
+
+    if args.callback then
+      local func = xplr.fn
+      for part in string.gmatch(args.callback, "[^%.]+") do
+        if type(func) == "table" and func[part] then
+          func = func[part]
+        else
+          break
+        end
+      end
+      if type(func) == "function" then
+        return func(path)
+      end
+    end
+
+    local msg = { FocusPath = path }
 
     if args.enter_dir then
       local isdir = xplr.util.shell_execute("test", { "-d", path }).returncode == 0
       if isdir then
-        table.insert(msgs, "Enter")
+        msg = { ChangeDirectory = path }
       end
     end
 
-    return msgs
+    return { msg }
   else
+    if args.callback then
+      local func = xplr.fn
+      for part in string.gmatch(args.callback, "[^%.]+") do
+        if type(func) == "table" and func[part] then
+          func = func[part]
+        else
+          break
+        end
+      end
+      if type(func) == "function" then
+        return func(lines)
+      end
+    end
+
     local msgs = {}
     for i, line in ipairs(lines) do
       table.insert(msgs, { SelectPath = line })
@@ -49,10 +76,14 @@ local function setup(args)
   local xplr = xplr
 
   args = args or {}
+  args.name = args.name or "fzf"
+  local name = args.name
+  args.name = args.name:gsub("%W", "_")
   args.mode = args.mode or "default"
   args.key = args.key or "ctrl-f"
   args.bin = args.bin or "fzf"
   args.args = args.args or ""
+  args.callback = args.callback or nil
 
   if args.recursive == nil then
     args.recursive = false
@@ -63,15 +94,15 @@ local function setup(args)
   end
 
   xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
-    help = "fzf search",
+    help = name,
     messages = {
       "PopMode",
-      { CallLua = "custom.fzf.search" },
+      { CallLua = "custom." .. args.name .. ".search" },
     },
   }
 
-  xplr.fn.custom.fzf = {}
-  xplr.fn.custom.fzf.search = function(app)
+  xplr.fn.custom[args.name] = {}
+  xplr.fn.custom[args.name].search = function(app)
     if args.recursive then
       return fzf(args)
     else
