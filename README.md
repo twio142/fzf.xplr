@@ -2,6 +2,7 @@ A custom fork of [fzf.xplr](https://github.com/twio142/fzf.xplr) with some addit
 
 - Support custom name, so the plugin can be required multiple times with different setups.
 - Support callback function to handle the selected path.
+- Support adding keybinding to a custom mode.
 
 Examples:
 

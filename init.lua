@@ -93,7 +93,17 @@ local function setup(args)
     args.enter_dir = false
   end
 
-  xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
+  local m = {}
+  if string.find(args.mode, "custom.") == 1 then
+    m = { "custom", string.match(args.mode, "custom%.(.+)") }
+  else
+    m = { "builtin", string.gsub(args.mode, "^builtin%.", "") }
+  end
+  if xplr.config.modes[m[1]][m[2]] == nil then
+    xplr.util.debug("Mode not found: " .. args.mode)
+    return
+  end
+  xplr.config.modes[m[1]][m[2]].key_bindings.on_key[args.key] = {
     help = name,
     messages = {
       "PopMode",
