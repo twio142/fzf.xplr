@@ -19,23 +19,21 @@ local function fzf(args, paths)
 
   if count == 0 then
     return
-  elseif count == 1 then
-    local path = lines[1]
-
-    if args.callback then
-      local func = xplr.fn
-      for part in string.gmatch(args.callback, "[^%.]+") do
-        if type(func) == "table" and func[part] then
-          func = func[part]
-        else
-          break
-        end
-      end
-      if type(func) == "function" then
-        return func(path)
+  elseif args.callback then
+    local func = xplr.fn
+    for part in string.gmatch(args.callback, "[^%.]+") do
+      if type(func) == "table" and func[part] then
+        func = func[part]
+      else
+        break
       end
     end
 
+    if type(func) == "function" then
+      return func(lines)
+    end
+  elseif count == 1 then
+    local path = lines[1]
     local msg = { FocusPath = path }
 
     if args.enter_dir then
@@ -47,20 +45,6 @@ local function fzf(args, paths)
 
     return { msg }
   else
-    if args.callback then
-      local func = xplr.fn
-      for part in string.gmatch(args.callback, "[^%.]+") do
-        if type(func) == "table" and func[part] then
-          func = func[part]
-        else
-          break
-        end
-      end
-      if type(func) == "function" then
-        return func(lines)
-      end
-    end
-
     local msgs = {}
     for i, line in ipairs(lines) do
       table.insert(msgs, { SelectPath = line })
